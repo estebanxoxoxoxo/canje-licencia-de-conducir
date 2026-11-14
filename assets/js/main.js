@@ -202,6 +202,38 @@
     });
   });
 
+  /* ───────── Popup de consulta (lista con buscador) ───────── */
+  const pop = $('[data-popup]');
+  if (pop && pop.showModal) {
+    const q = $('[data-popup-q]', pop), body = $('.popup-body', pop), none = $('[data-popup-empty]', pop);
+    const rows = $$('[data-popup-row]', pop), groups = $$('[data-popup-group]', pop);
+    const plain = (s) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+    const filter = () => {
+      const v = plain(q.value);
+      rows.forEach((r) => { r.hidden = Boolean(v) && !r.dataset.name.includes(v); });
+      groups.forEach((g) => { g.hidden = $$('[data-popup-row]', g).every((r) => r.hidden); });
+      none.hidden = rows.some((r) => !r.hidden);
+    };
+    q.addEventListener('input', filter);
+    $$('[data-popup-open]').forEach((b) => b.addEventListener('click', () => {
+      q.value = '';
+      filter();
+      pop.showModal();
+      body.scrollTop = 0;
+      document.documentElement.classList.add('popup-on');
+    }));
+    $$('[data-popup-close]', pop).forEach((b) => b.addEventListener('click', () => pop.close()));
+    // Clic en el fondo oscuro (fuera de la caja) = cerrar
+    pop.addEventListener('click', (e) => {
+      if (e.target !== pop) return;
+      const r = pop.getBoundingClientRect();
+      if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) pop.close();
+    });
+    pop.addEventListener('close', () => document.documentElement.classList.remove('popup-on'));
+  } else {
+    $$('[data-popup-open]').forEach((b) => { b.hidden = true; });
+  }
+
   /* ───────── Suma con campos (p. ej. lo que cuesta esperar) ───────── */
   $$('[data-sum]').forEach((box) => {
     const inputs = $$('[data-sum-input]', box);

@@ -43,8 +43,66 @@ const countryOptions = [
   ...SIN.map(([n, t]) => ({ label: n, big: 'Hoy no hay canje', small: t, tone: 'muted' })),
 ].sort((a, b) => a.label.localeCompare(b.label, 'es'));
 
-// Pruebas para camión y autobús según la columna «Pruebas a realizar» de la lista DGT (26/06/2026)
-const SOLO_CIRC = ['Argentina', 'Chile', 'Costa Rica', 'Honduras', 'Perú'];
+/* ───────────── Lista completa de la DGT: 33 países (actualizada el 26/06/2026) ─────────────
+   Columnas «Permisos a obtener» y «Pruebas a realizar». Alimenta el popup de países.
+   Cada país lleva solo los permisos que figuran en la lista: Nueva Zelanda, por ejemplo,
+   solo tiene moto o coche. Si un permiso no figura, no se añade. */
+const SIN_EXAMEN = 'Sin examen';
+const CIRC = 'Prueba de circulación';
+const TEO_CIRC = 'Teórica específica y circulación';
+const LATAM = 'Latinoamérica';
+const OTROS = 'Otros países';
+// [país, grupo, pruebas para camión y autobús (null = ese permiso no figura), otras formas de buscarlo]
+const CONVENIOS = [
+  ['Andorra', OTROS, SIN_EXAMEN],
+  ['Argelia', OTROS, TEO_CIRC],
+  ['Argentina', LATAM, CIRC],
+  ['Bolivia', LATAM, TEO_CIRC],
+  ['Brasil', LATAM, TEO_CIRC, 'brazil'],
+  ['Chile', LATAM, CIRC],
+  ['Colombia', LATAM, TEO_CIRC],
+  ['Corea del Sur', OTROS, SIN_EXAMEN, 'república de corea'],
+  ['Costa Rica', LATAM, CIRC],
+  ['Ecuador', LATAM, TEO_CIRC],
+  ['El Salvador', LATAM, TEO_CIRC, 'república de el salvador'],
+  ['Filipinas', OTROS, TEO_CIRC],
+  ['Georgia', OTROS, CIRC],
+  ['Guatemala', LATAM, TEO_CIRC],
+  ['Honduras', LATAM, CIRC],
+  ['Japón', OTROS, SIN_EXAMEN],
+  ['Macedonia del Norte', OTROS, TEO_CIRC],
+  ['Marruecos', OTROS, CIRC],
+  ['Moldavia', OTROS, 'Destreza en circuito cerrado y circulación', 'moldova'],
+  ['Mónaco', OTROS, SIN_EXAMEN],
+  ['Nicaragua', LATAM, TEO_CIRC],
+  ['Nueva Zelanda', OTROS, null],
+  ['Panamá', LATAM, TEO_CIRC],
+  ['Paraguay', LATAM, TEO_CIRC],
+  ['Perú', LATAM, CIRC],
+  ['Reino Unido', OTROS, SIN_EXAMEN, 'irlanda del norte inglaterra escocia gales gran bretaña uk'],
+  ['República Dominicana', LATAM, TEO_CIRC, 'dominicana'],
+  ['Serbia', OTROS, 'Teórica y circulación'],
+  ['Suiza', OTROS, SIN_EXAMEN],
+  ['Túnez', OTROS, TEO_CIRC],
+  ['Turquía', OTROS, TEO_CIRC],
+  ['Ucrania', OTROS, CIRC],
+  // Uruguay distingue camión de autobús: tres líneas
+  ['Uruguay', LATAM, [['Camión (C1, C1+E, C y C+E)', TEO_CIRC], ['Autobús (D)', CIRC]]],
+];
+const popupGroups = [LATAM, OTROS].map((label) => ({
+  label,
+  items: CONVENIOS.filter(([, g]) => g === label).map(([name, , pro, alias]) => ({
+    name,
+    alias,
+    lines: [
+      { label: 'Coche y moto', text: SIN_EXAMEN, ok: true },
+      ...(Array.isArray(pro) ? pro : pro ? [['Camión y autobús', pro]] : []).map(([l, text]) => ({ label: l, text, ok: text === SIN_EXAMEN })),
+    ],
+  })),
+}));
+
+// Pruebas para camión y autobús en Latinoamérica: sale de la misma lista
+const SOLO_CIRC = CONVENIOS.filter(([, g, pro]) => g === LATAM && pro === CIRC).map(([n]) => n);
 const proOptions = [...DIRECTO, ...VERIFICA]
   .map(([n]) => {
     if (n === 'Uruguay') return { label: n, big: 'Según la clase', small: 'C1, C1+E, C y C+E: teórica específica y prueba de circulación. Clase D: solo prueba de circulación.' };
@@ -126,6 +184,21 @@ module.exports = {
       ok: '¡Recibido! Te escribimos en menos de 24 horas.',
       error: 'No hemos podido enviarlo. Escribinos por WhatsApp y lo vemos al momento.',
     },
+  },
+
+  // Popup «Países con convenio»: se abre desde los botones «popup» de la portada y de las herramientas.
+  popup: {
+    icon: 'globe',
+    eyebrow: 'Lista oficial de la DGT',
+    title: 'Países con *convenio.*',
+    lead: 'Qué permiso podés canjear según el país que emitió tu licencia, y qué pruebas pide cada uno.',
+    close: 'Cerrar',
+    searchLabel: 'Buscar país',
+    searchPlaceholder: 'Buscá tu país',
+    groups: popupGroups,
+    empty: 'Ese país no figura en la lista de la DGT: hoy no tiene convenio de canje con España. Escribinos y te contamos qué camino tenés.',
+    foot: 'Lista de la DGT actualizada el 26/06/2026. Las clases exactas dependen de las equivalencias de cada convenio.',
+    cta: 'Contanos tu caso',
   },
 
   // Pantalla del móvil (sección Plataforma). Es una ilustración del seguimiento.
@@ -234,6 +307,7 @@ module.exports = {
       eyebrow: 'Canjes',
       title: 'Elegí tu *camino.*',
       lead: 'Depende de qué manejás y de qué país es tu licencia. Te decimos cuál es el tuyo en una llamada.',
+      popup: 'Ver países y permisos',
     },
     how: {
       eyebrow: 'Cómo funciona',
@@ -392,6 +466,7 @@ module.exports = {
         big: '{paises} países',
         bigLabel: 'de Latinoamérica tienen convenio en vigor',
         text: 'Con convenio, la licencia de coche y moto se canjea sin examen. En la mayoría de los países, la DGT verifica antes tu licencia con el país que la emitió.',
+        popup: 'Ver todos los países y permisos',
         chip: { label: 'Tasa oficial del canje', value: '{tasa}' },
         calcTitle: 'Comprobá tu país',
         calcLabel: 'País que emitió tu licencia',
@@ -475,6 +550,7 @@ module.exports = {
         big: '2 convocatorias',
         bigLabel: 'incluye la tasa oficial de examen',
         text: 'Para camión y autobús el canje no es directo: hay que superar una prueba de circulación y, según el convenio, también una teórica específica.',
+        popup: 'Ver las pruebas de cada país',
         chip: { label: 'Tasa oficial con pruebas', value: '{tasaPro}' },
         calcTitle: 'Comprobá tu país',
         calcLabel: 'País que emitió tu licencia',

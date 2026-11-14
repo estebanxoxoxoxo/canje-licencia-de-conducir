@@ -13,9 +13,12 @@ npm run build   # genera /dist, listo para subir
 |---|---|
 | Nombre de marca, isotipo, colores, **precios**, **tasas e importes oficiales**, WhatsApp, email, URL de "Mi expediente", redes, fotos, endpoint del formulario, Google Analytics | `site.config.js` |
 | Todos los textos (incluido SEO: title y description de cada página) y la **lista de países con convenio** | `content/es.js` |
+| **Popup «Países con convenio»** (los 33 países de la DGT, con los permisos y las pruebas de cada uno): la lista `CONVENIOS` y el bloque `popup` | `content/es.js` |
 | Fuente oficial de cada dato legal, con fecha de comprobación | `FUENTES.md` |
 | Paleta, tipografía, espaciados | `assets/css/styles.css` (bloque `:root`) |
 | Plantillas HTML de las páginas | `src/render.js` |
+
+El popup se abre desde los botones «Ver países y permisos» (portada y herramientas de las páginas de coche y de camión). En `CONVENIOS`, cada país lleva solo los permisos que figuran en la lista de la DGT: si un permiso no figura (Nueva Zelanda solo tiene moto o coche), no se añade. No muestra tasas.
 
 En los textos puedes usar `{canje}`, `{pro}`, `{pareja}`, `{parejaSave}`, `{tasa}`, `{tasaPro}`, `{multa}`, `{multaNo}`, `{paises}`, `{meses}`, `{psico}`, `{provisional}` y `{brand}`: se rellenan solos con los valores de `site.config.js`. Si pones una palabra entre `*asteriscos*` en un titular, sale en cursiva serif.
 

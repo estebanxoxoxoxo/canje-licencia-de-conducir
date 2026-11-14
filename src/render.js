@@ -122,6 +122,7 @@ ${body}
 </main>
 ${footer(ctx)}
 ${waFab(ctx)}
+${body.includes('data-popup-open') ? popup(ctx) : ''}
 ${cookieBanner(ctx)}
 </body>
 </html>`;
@@ -250,12 +251,64 @@ function cookieBanner(ctx) {
 </div>`;
 }
 
+/* ───────────────────────── Popup de consulta (opcional) ─────────────────────────
+   Si content.popup existe, se pinta un <dialog> con una lista agrupada y un buscador.
+   Cada fila lleva solo las líneas que tenga: no hay un número fijo de opciones.
+   Lo abre cualquier botón con [data-popup-open] (ver popupBtn). */
+const plain = (s) => String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
+const popupBtn = (ctx, label) =>
+  ctx.c.popup && label ? `<button type="button" class="btn btn-ghost btn-sm popup-open" data-popup-open aria-haspopup="dialog">${icon(ctx.c.popup.icon || 'search')}${label}</button>` : '';
+
+function popup(ctx) {
+  const p = ctx.c.popup;
+  if (!p) return '';
+  const row = (it) => `<li class="popup-row" data-popup-row data-name="${esc(plain(`${it.name} ${it.alias || ''}`))}">
+          <p class="popup-name">${it.name}</p>
+          <ul class="popup-lines">
+            ${it.lines.map((l) => `<li><span>${l.label}</span><strong${l.ok ? ' class="ok"' : ''}>${l.text}</strong></li>`).join('')}
+          </ul>
+        </li>`;
+  return `<dialog class="popup" data-popup aria-labelledby="popup-title">
+  <div class="popup-head">
+    <div>
+      ${p.eyebrow ? eyebrow(p.eyebrow) : ''}
+      <h2 class="display-m" id="popup-title">${rich(p.title)}</h2>
+      ${p.lead ? `<p class="popup-lead">${p.lead}</p>` : ''}
+    </div>
+    <button type="button" class="round-btn popup-close" data-popup-close aria-label="${esc(p.close)}">${icon('x')}</button>
+  </div>
+  <div class="field popup-search">
+    <label class="vh" for="popup-q">${p.searchLabel}</label>
+    <input id="popup-q" type="search" placeholder="${esc(p.searchPlaceholder)}" autocomplete="off" data-popup-q>
+  </div>
+  <div class="popup-body" tabindex="-1">
+    ${p.groups
+      .map(
+        (g) => `<section class="popup-group" data-popup-group>
+      <h3 class="popup-group-label">${g.label}<span>${g.items.length}</span></h3>
+      <ul class="popup-list">
+        ${g.items.map(row).join('\n        ')}
+      </ul>
+    </section>`
+      )
+      .join('\n    ')}
+    <p class="popup-empty" data-popup-empty hidden>${p.empty}</p>
+  </div>
+  <div class="popup-foot">
+    ${p.foot ? `<p class="footnote">${p.foot}</p>` : ''}
+    ${p.cta ? `<a class="btn btn-accent" href="${ctx.url('start')}">${p.cta}${icon('arrow')}</a>` : ''}
+  </div>
+</dialog>`;
+}
+
 /* ───────────────────────── Componentes ───────────────────────── */
-function sectionHead({ eb, title, lead, center = false, light = false }) {
+function sectionHead({ eb, title, lead, center = false, light = false, extra = '' }) {
   return `<div class="section-head${center ? ' center' : ''}" data-reveal>
     ${eb ? eyebrow(eb, light ? 'eyebrow-light' : '') : ''}
     <h2 class="display-l">${rich(title)}</h2>
     ${lead ? `<p class="lead">${lead}</p>` : ''}
+    ${extra}
   </div>`;
 }
 
@@ -384,11 +437,12 @@ function heroPrice(price, notes = [], footnote, delay = '.24s') {
 
 /* ───────────────────────── Herramientas (calculadoras) ─────────────────────────
    Todas comparten el mismo marco visual: panel claro con el dato clave + panel oscuro interactivo. */
-function toolInfo(tool) {
+function toolInfo(ctx, tool) {
   return `<div class="means-info">
         <p class="means-big">${tool.big}</p>
         <p class="means-label">${tool.bigLabel}</p>
         <p class="means-text">${tool.text}</p>
+        ${popupBtn(ctx, tool.popup)}
         ${tool.chip ? `<p class="means-iprem"><span>${tool.chip.label}</span><strong>${tool.chip.value}</strong></p>` : ''}
       </div>`;
 }
@@ -446,7 +500,7 @@ function toolBlock(ctx, tool, key) {
   <div class="container">
     ${sectionHead({ title: tool.title, lead: tool.lead })}
     <div class="means" data-reveal>
-      ${toolInfo(tool)}
+      ${toolInfo(ctx, tool)}
       ${panel}
     </div>
   </div>
@@ -507,7 +561,7 @@ function home(ctx) {
 
   const cardsSection = `<section class="section" id="caminos">
   <div class="container">
-    ${sectionHead({ eb: h.cards.eyebrow, title: h.cards.title, lead: h.cards.lead })}
+    ${sectionHead({ eb: h.cards.eyebrow, title: h.cards.title, lead: h.cards.lead, extra: popupBtn(ctx, h.cards.popup) })}
     <div class="res-grid">${cards}</div>
   </div>
 </section>`;
