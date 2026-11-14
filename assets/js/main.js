@@ -209,7 +209,7 @@
     const out = $('[data-sum-out]', box), extra = $('[data-sum-extra]', box);
     const render = () => {
       let total = 0, monthly = 0;
-      if (box.dataset.formula === 'gap') { monthly = Math.max(0, val('cost') - val('income')); total = monthly * val('months'); }
+      if (box.dataset.formula === 'gap') { monthly = Math.max(0, val('cost') - val('income') - val('aid')); total = monthly * val('months'); }
       out.textContent = money(total);
       if (extra && extra.dataset.tpl) extra.textContent = extra.dataset.tpl.replace('{monthly}', money(monthly)).replace('{months}', val('months'));
     };
